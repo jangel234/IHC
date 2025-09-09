@@ -8,117 +8,143 @@
     <title>Juego</title>
     <style>
         .altura {
-            height: 80px;
+            height: 60px; /* Ajustado para que quepa mejor en pantalla */
         }
+
         .bordered {
-            border: 2px solid rgb(255, 255, 255);
+            border: 2px solid rgb(200, 200, 200); /* Borde más sutil */
         }
+
         .backgrounded {
             background-color: gainsboro;
+        }
+
+        .player {
+            background-image: url('./imagenes/Personaje-test1.png');
+            background-size: contain; /* Contain es mejor para que no se corte la imagen */
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: darkgray; /* Color de fondo para distinguirlo */
         }
     </style>
 </head>
 
 <body>
-    <div class="container row altura" id="fila1">
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
+    <div class="container" id="grid">
+
     </div>
-    <div class="container row altura" id="fila1">
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-    </div>
-    <div class="container row altura" id="fila1">
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-    </div>
-    <div class="container row altura" id="fila1">
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-    </div>
-    <div class="container row altura" id="fila1">
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-    </div>
-    <div class="container row altura" id="fila1">
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-    </div>
-    <div class="container row altura" id="fila1">
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-        <div class="col-1 backgrounded bordered"></div>
-    </div>
-    
+
 </body>
+<script>
+    // --- PARTE 1: GENERACIÓN DEL GRID (CON IDs ÚNICOS) ---
+    window.addEventListener('load', function () {
+        const gridContainer = document.getElementById("grid");
+        const gridHeight = 10; // Número de filas
+        const gridWidth = 12;  // Número de columnas
+
+        for (let i = 0; i < gridHeight; i++) {
+            let fila = document.createElement("div");
+            fila.className = 'row altura';
+            // No necesitamos ID en la fila, pero lo dejamos por si lo usas después
+            fila.id = 'y' + i;
+
+            for (let o = 0; o < gridWidth; o++) {
+                let columna = document.createElement("div");
+                columna.className = 'col-1 backgrounded bordered';
+                
+                // ---- CAMBIO IMPORTANTE: ID ÚNICO ----
+                // Creamos un ID como "cell-fila-columna", ej: "cell-0-0"
+                columna.id = `cell-${i}-${o}`; 
+                
+                fila.appendChild(columna);
+            }
+            gridContainer.appendChild(fila);
+        }
+
+        // Posición inicial del jugador
+        let startingCell = document.getElementById('cell-0-0');
+        // Usamos classList.add() que es más seguro que sobreescribir className
+        startingCell.classList.add('player');
+    });
+
+    // --- PARTE 2: LÓGICA DE MOVIMIENTO ---
+    document.addEventListener('keydown', function (event) {
+        // Usamos querySelector que nos devuelve el PRIMER elemento con la clase '.player'
+        // Es más directo y no tenemos que usar el índice [0]
+        const player = document.querySelector(".player");
+
+        // Si no existe un jugador, no hacemos nada.
+        if (!player) {
+            return;
+        }
+
+        // Obtenemos las coordenadas actuales desde el ID del jugador
+        // "cell-y-x" -> ["cell", "y", "x"]
+        const coords = player.id.split('-');
+        let y = parseInt(coords[1]);
+        let x = parseInt(coords[2]);
+
+        // Guardamos las coordenadas futuras
+        let nextY = y;
+        let nextX = x;
+
+        switch (event.key) {
+            case 'ArrowUp':
+                nextY = y - 1;
+                break;
+            case 'ArrowDown':
+                nextY = y + 1;
+                break;
+            case 'ArrowLeft':
+                nextX = x - 1;
+                break;
+            case 'ArrowRight':
+                nextX = x + 1;
+                break;
+            case 'w':
+                nextY = y - 1;
+                break;
+            case 's':
+                nextY = y + 1;
+                break;
+            case 'a':
+                nextX = x - 1;
+                break;
+            case 'd':
+                nextX = x + 1;
+                break;
+            case 'W':
+                nextY = y - 1;
+                break;
+            case 'S':
+                nextY = y + 1;
+                break;
+            case 'A':
+                nextX = x - 1;
+                break;
+            case 'D':
+                nextX = x + 1;
+                break;
+            default:
+                return; // Si no es una flecha, no hacemos nada
+        }
+
+        // Verificamos que no se salga de los límites del grid
+        const gridHeight = 10;
+        const gridWidth = 12;
+        if (nextX >= 0 && nextX < gridWidth && nextY >= 0 && nextY < gridHeight) {
+            
+            // Construimos el ID de la siguiente celda
+            const nextCellId = `cell-${nextY}-${nextX}`;
+            const nextCell = document.getElementById(nextCellId);
+
+            if (nextCell) {
+                // Movemos la clase "player"
+                player.classList.remove('player');
+                nextCell.classList.add('player');
+            }
+        }
+    });
+</script>
 
 </html>
