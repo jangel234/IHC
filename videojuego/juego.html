@@ -40,6 +40,7 @@
     <textarea id="transcripcion" rows="5" cols="50" readonly></textarea>
     <button id="iniciar">Iniciar Reconocimiento</button>
     <button id="detener">Detener Reconocimiento</button>
+    <audio id="moveSound" src="../sonidos/quack.mp3" preload="auto"></audio>
 
 </body>
 <script>
@@ -149,6 +150,13 @@
                 // Movemos la clase "player"
                 player.classList.remove('player');
                 nextCell.classList.add('player');
+
+                // Reproducir sonido de movimiento
+                const moveSound = document.getElementById('moveSound');
+                if (moveSound) {
+                    moveSound.currentTime = 0; // Reinicia el sonido si se pulsa rápido
+                    moveSound.play();
+                }
             }
         }
     });
