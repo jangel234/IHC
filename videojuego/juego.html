@@ -221,7 +221,53 @@
                 //textarea.value = "Reconocimiento finalizado. Haz clic en Iniciar para comenzar de nuevo.";
             }
         };
+
+        // Evento cuando se recibe un resultado (final o provisional)
+        recognition.onresult = (event) => {
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript.trim().toLowerCase();
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                }
+            }
+
+            if (finalTranscript) {
+                textarea.value += finalTranscript + ' ';
+
+                // Detectar comandos 
+                if (finalTranscript.includes("arriba")) {
+                    simularTecla("ArrowUp");
+                } else if (finalTranscript.includes("abajo")) {
+                    simularTecla("ArrowDown");
+                } else if (finalTranscript.includes("izquierda")) {
+                    simularTecla("ArrowLeft");
+                } else if (finalTranscript.includes("derecha")) {
+                    simularTecla("ArrowRight");
+                }
+            }
+        };
+
+        // Reiniciar automáticamente si se detiene
+        recognition.onend = () => {
+            recognition.start();
+        };
+
+        // Manejo de errores
+        recognition.onerror = (event) => {
+            console.error("Error en reconocimiento de voz:", event.error);
+            textarea.value += "\n[Error: " + event.error + "]";
+        };
     }
+
+        
+
+    // Función para simular el evento de teclado
+    function simularTecla(tecla) {
+        const evento = new KeyboardEvent("keydown", { key: tecla });
+        document.dispatchEvent(evento);
+    }
+
 </script>
 
 </html>
