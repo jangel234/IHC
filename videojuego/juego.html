@@ -1,371 +1,421 @@
-<!DOCTYPE html> <html lang="en"> <head>     
-<meta charset="UTF-8">     
-<meta name="viewport" content="width=device-width, initial-scale=1.0">     
-<link rel="stylesheet" href="./css/bootstrap.min.css">     
-<title>Juego</title>     
-<style>         
-.altura {             
-    height: 60px;             
-    /* Ajustado para que quepa mejor en pantalla */         
-}         
-body {             
-    margin: 0;             
-    background-image: url('./imagenes/Campo1.png');             
-    /* ← tu imagen de fondo */             
-    background-size: cover;             
-    background-position: center;             
-    background-repeat: no-repeat;         
-}         
-.bordered {             
-    border: 2px solid rgb(200, 200, 200);             
-    /* Borde más sutil */         
-}         
-.backgrounded,         
-.bordered {             
-    border: none;             
-    background: transparent;         
-}         
-.player {             
-    background-image: url('./imagenes/pato.png');             
-    background-size: contain;             
-    /* Contain es mejor para que no se corte la imagen */             
-    background-repeat: no-repeat;             
-    background-position: center;             
-    /* background-color: darkgray; */             
-    /* Color de fondo para distinguirlo */         
-}         
-/* Migaja (crumb) visual */         
-.crumb {             
-    width: 22px;             
-    height: 22px;             
-    background: radial-gradient(circle at 30% 30%, #fff4b8 0%, #f2c94c 40%, #c58b00 100%);             
-    border-radius: 50%;             
-    margin: 4px auto;             
-    /* centra en la celda */             
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);         
-}     
-</style> 
-</head> 
-<body>     
-<div class="container" id="grid">     
-</div>     
-<div id="hud" style="margin:8px 0;font-weight:600;">Puntos: <span id="score">0</span></div>     
-<textarea id="transcripcion" rows="5" cols="50" readonly></textarea>     
-<button id="iniciar">Iniciar Reconocimiento</button>     
-<button id="detener">Detener Reconocimiento</button>     
-<audio id="moveSound" src="../sonidos/quack.mp3" preload="auto"></audio> 
-</body> 
-<script>     
-// --- PARTE 1: GENERACIÓN DEL GRID (CON IDs ÚNICOS) ---     
-window.addEventListener('load', function () {         
-    const gridContainer = document.getElementById("grid");         
-    const gridHeight = 10; // Número de filas         
-    const gridWidth = 12;  // Número de columnas         
-    for (let i = 0; i < gridHeight; i++) {             
-        let fila = document.createElement("div");             
-        fila.className = 'row altura';             
-        // No necesitamos ID en la fila, pero lo dejamos por si lo usas después             
-        fila.id = 'y' + i;             
-        for (let o = 0; o < gridWidth; o++) {                 
-            let columna = document.createElement("div");                 
-            columna.className = 'col-1 backgrounded bordered';                 
-            // ---- CAMBIO IMPORTANTE: ID ÚNICO ----                 
-            // Creamos un ID como "cell-fila-columna", ej: "cell-0-0"                 
-            columna.id = `cell-${i}-${o}`;                 
-            fila.appendChild(columna);             
-        }             
-        gridContainer.appendChild(fila);         
-    }         
-    // Posición inicial del jugador         
-    let startingCell = document.getElementById('cell-0-0');         
-    // Usamos classList.add() que es más seguro que sobreescribir className         
-    startingCell.classList.add('player');     
-});     
+<!DOCTYPE html>
+<html lang="es">
 
-// --- PARTE 2: LÓGICA DE MOVIMIENTO ---     
-document.addEventListener('keydown', function (event) {         
-    // Usamos querySelector que nos devuelve el PRIMER elemento con la clase '.player'         
-    // Es más directo y no tenemos que usar el índice [0]         
-    const player = document.querySelector(".player");         
-    // Si no existe un jugador, no hacemos nada.         
-    if (!player) {             
-        return;         
-    }         
-    // Obtenemos las coordenadas actuales desde el ID del jugador         
-    // "cell-y-x" -> ["cell", "y", "x"]         
-    const coords = player.id.split('-');         
-    let y = parseInt(coords[1]);         
-    let x = parseInt(coords[2]);         
-    // Guardamos las coordenadas futuras         
-    let nextY = y;         
-    let nextX = x;         
-    switch (event.key) {             
-        case 'ArrowUp':                 
-            nextY = y - 1;                 
-            break;             
-        case 'ArrowDown':                 
-            nextY = y + 1;                 
-            break;             
-        case 'ArrowLeft':                 
-            nextX = x - 1;                 
-            break;             
-        case 'ArrowRight':                 
-            nextX = x + 1;                 
-            break;             
-        case 'w':                 
-            nextY = y - 1;                 
-            break;             
-        case 's':                 
-            nextY = y + 1;                 
-            break;             
-        case 'a':                 
-            nextX = x - 1;                 
-            break;             
-        case 'd':                 
-            nextX = x + 1;                 
-            break;             
-        case 'W':                 
-            nextY = y - 1;                 
-            break;             
-        case 'S':                 
-            nextY = y + 1;                 
-            break;             
-        case 'A':                 
-            nextX = x - 1;                 
-            break;             
-        case 'D':                 
-            nextX = x + 1;                 
-            break;             
-        default:                 
-            return; // Si no es una flecha, no hacemos nada         
-    }         
-    // Verificamos que no se salga de los límites del grid         
-    const gridHeight = 10;         
-    const gridWidth = 12;         
-    if (nextX >= 0 && nextX < gridWidth && nextY >= 0 && nextY < gridHeight) {             
-        // Construimos el ID de la siguiente celda             
-        const nextCellId = `cell-${nextY}-${nextX}`;             
-        const nextCell = document.getElementById(nextCellId);             
-        if (nextCell) {                 
-            // Movemos la clase "player"                 
-            player.classList.remove('player');                 
-            nextCell.classList.add('player');                 
-            // Reproducir sonido de movimiento                 
-            const moveSound = document.getElementById('moveSound');                 
-            if (moveSound) {                     
-                moveSound.currentTime = 0; // Reinicia el sonido si se pulsa rápido                     
-                moveSound.play();                 
-            }             
-        }         
-    }     
-});     
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <title>Juego</title>
+    <style>
+        .altura {
+            height: 60px;
+            /* Ajustado para que quepa mejor en pantalla */
+        }
 
-// --- PARTE 3: MIGAJAS ----     
-// Ahora soportamos varias migajas simultáneas que caen desde la fila 0     
-const gridHeight = 10;     
-const gridWidth = 12;     
-const maxCrumbs = 4; // Puedes cambiar esto para más/menos migajas     
-let crumbs = []; // array de {y, x, element}     
-let crumbInterval = null; // intervalo que hace caer las migajas     
-const crumbFallDelay = 400; // ms entre pasos de caída (ajusta la velocidad)     
-const crumbSound = new Audio('../sonidos/clear-combo.mp3');     
-const scoreEl = document.getElementById('score');     
-let score = 0;     
+        body {
+            display: block;
+            justify-items: center;
+            background-image: url('./imagenes/el-bueno.png');
+            /* ← tu imagen de fondo */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
 
-// Crear una migaja DOM dentro de una celda (no elimina otras migajas)     
-function placeCrumbAt(y, x) {         
-    const cell = document.getElementById(`cell-${y}-${x}`);         
-    if (!cell) return null;         
-    const frag = document.createElement('div');         
-    frag.className = 'crumb';         
-    cell.appendChild(frag);         
-    return frag;     
-}     
+        #grid {
+            margin: 0;
+            /* background: lightcoral; */
+            /* ← tu imagen de fondo */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
 
-function removeCrumbDOMObj(obj) {         
-    if (!obj) return;         
-    const el = obj.element;         
-    if (el && el.parentElement) el.parentElement.removeChild(el);     
-}     
+        .bordered {
+            border: 2px solid rgb(200, 200, 200);
+            /* Borde más sutil */
+        }
 
-// Comprueba si ya existe una migaja en la posición (y,x)     
-function crumbAt(y, x) {         
-    return crumbs.find(c => c.y === y && c.x === x);     
-}     
+        .backgrounded,
+        .bordered {
+            border: none;
+            background: transparent;
+        }
 
-function spawnCrumb() {         
-    if (crumbs.length >= maxCrumbs) return;         
-    // Elegir columna aleatoria         
-    let attempts = 0;         
-    let x;         
-    do {             
-        x = Math.floor(Math.random() * gridWidth);             
-        attempts++;         
-    } while (crumbAt(0, x) && attempts < 8);         
-    const y = 0;         
-    // Evitar aparecer exactamente encima del jugador si está en y=0         
-    const player = document.querySelector('.player');         
-    if (player) {             
-        const pcoords = player.id.split('-');             
-        const py = parseInt(pcoords[1]);             
-        const px = parseInt(pcoords[2]);             
-        if (py === 0 && px === x) {                 
-            // mover a otra columna si es posible                 
-            x = (x + 1) % gridWidth;             
-        }         
-    }         
-    const el = placeCrumbAt(y, x);         
-    crumbs.push({ y, x, element: el });     
-}     
+        .player {
+            background-image: url('./imagenes/pato.png');
+            background-size: contain;
+            /* Contain es mejor para que no se corte la imagen */
+            background-repeat: no-repeat;
+            background-position: center;
+            /* background-color: darkgray; */
+            /* Color de fondo para distinguirlo */
+        }
 
-function fallStepAll() {         
-    if (crumbs.length === 0) return;         
-    const player = document.querySelector('.player');         
-    let py = -1, px = -1;         
-    if (player) {             
-        const coords = player.id.split('-');             
-        py = parseInt(coords[1]);             
-        px = parseInt(coords[2]);         
-    }         
-    // Iteramos al revés para poder splicear sin problemas         
-    for (let i = crumbs.length - 1; i >= 0; i--) {             
-        const c = crumbs[i];             
-        const nextY = c.y + 1;             
-        // Si la migaja está en la misma celda que el jugador -> comer             
-        if (py === c.y && px === c.x) {                 
-            eatCrumbAtIndex(i);                 
-            continue;             
-        }             
-        // Si la migaja caerá sobre el jugador -> comer             
-        if (py === nextY && px === c.x) {                 
-            eatCrumbAtIndex(i);                 
-            continue;             
-        }             
-        // Si llega al final del grid, eliminar y programar respawn             
-        if (nextY >= gridHeight) {                 
-            removeCrumbDOMObj(c);                 
-            crumbs.splice(i, 1);                 
-            setTimeout(spawnCrumb, 600 + Math.random() * 1200);                 
-            continue;             
-        }             
-        // Mover DOM de la migaja a la siguiente celda             
-        const nextCell = document.getElementById(`cell-${nextY}-${c.x}`);             
-        if (nextCell) {                 
-            // eliminar el DOM anterior y crear uno nuevo en la siguiente celda                 
-            removeCrumbDOMObj(c);                 
-            const el = placeCrumbAt(nextY, c.x);                 
-            c.y = nextY;                 
-            c.element = el;             
-        }         
-    }     
-}     
+        /* Migaja (crumb) visual */
+        .crumb {
+            width: 22px;
+            height: 22px;
+            background: radial-gradient(circle at 30% 30%, #fff4b8 0%, #f2c94c 40%, #c58b00 100%);
+            border-radius: 50%;
+            margin: 4px auto;
+            /* centra en la celda */
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
 
-function eatCrumbAtIndex(i) {         
-    const c = crumbs[i];         
-    try {             
-        crumbSound.currentTime = 0;             
-        crumbSound.play();         
-    } catch (e) {             
-        // ignore autoplay errors         
-    }         
-    score += 1;         
-    scoreEl.textContent = score;         
-    removeCrumbDOMObj(c);         
-    crumbs.splice(i, 1);         
-    // respawnear después de un tiempo aleatorio         
-    setTimeout(spawnCrumb, 400 + Math.random() * 1600);     
-}     
+<body>
+    <div id="hud" style="margin:8px 0;font-weight:600; font-size: 40px; display: flex; justify-content: center;">Puntos: &nbsp; 
+        <span id="score">0</span>
+    </div>
+    <div class="container" id="grid">
+    </div>
+    <textarea id="transcripcion" rows="5" cols="50" readonly style="display: none;"></textarea>
+    <div style="display: flex; justify-content: center;">
+        
+        <button id="iniciar">Jugar con voz!</button>
+        <button id="detener">Jugar sin voz</button>
+    </div>
+    <audio id="moveSound" src="../sonidos/quack.mp3" preload="auto"></audio>
+</body>
+<script>
+    // --- PARTE 1: GENERACIÓN DEL GRID (CON IDs ÚNICOS) ---     
+    window.addEventListener('load', function () {
+        const gridContainer = document.getElementById("grid");
+        const gridHeight = 10; // Número de filas         
+        const gridWidth = 12;  // Número de columnas         
+        for (let i = 0; i < gridHeight; i++) {
+            let fila = document.createElement("div");
+            fila.className = 'row altura';
+            // No necesitamos ID en la fila, pero lo dejamos por si lo usas después             
+            fila.id = 'y' + i;
+            for (let o = 0; o < gridWidth; o++) {
+                let columna = document.createElement("div");
+                columna.className = 'col-1 backgrounded bordered';
+                // ---- CAMBIO IMPORTANTE: ID ÚNICO ----                 
+                // Creamos un ID como "cell-fila-columna", ej: "cell-0-0"                 
+                columna.id = `cell-${i}-${o}`;
+                fila.appendChild(columna);
+            }
+            gridContainer.appendChild(fila);
+        }
+        // Posición inicial del jugador         
+        let startingCell = document.getElementById('cell-5-6');
+        // Usamos classList.add() que es más seguro que sobreescribir className         
+        startingCell.classList.add('player');
+    });
 
-function startCrumbLoop() {         
-    if (crumbInterval) return;         
-    // Spawn inicial de varias migajas con pequeños delays         
-    for (let i = 0; i < maxCrumbs; i++) {             
-        setTimeout(spawnCrumb, i * 500 + Math.random() * 800);         
-    }         
-    crumbInterval = setInterval(fallStepAll, crumbFallDelay);     
-}     
+    // --- PARTE 2: LÓGICA DE MOVIMIENTO ---     
+    document.addEventListener('keydown', function (event) {
+        // Usamos querySelector que nos devuelve el PRIMER elemento con la clase '.player'         
+        // Es más directo y no tenemos que usar el índice [0]         
+        const player = document.querySelector(".player");
+        // Si no existe un jugador, no hacemos nada.         
+        if (!player) {
+            return;
+        }
+        // Obtenemos las coordenadas actuales desde el ID del jugador         
+        // "cell-y-x" -> ["cell", "y", "x"]         
+        const coords = player.id.split('-');
+        let y = parseInt(coords[1]);
+        let x = parseInt(coords[2]);
+        // Guardamos las coordenadas futuras         
+        let nextY = y;
+        let nextX = x;
+        switch (event.key) {
+            case 'ArrowUp':
+                nextY = y - 1;
+                break;
+            case 'ArrowDown':
+                nextY = y + 1;
+                break;
+            case 'ArrowLeft':
+                nextX = x - 1;
+                break;
+            case 'ArrowRight':
+                nextX = x + 1;
+                break;
+            case 'w':
+                nextY = y - 1;
+                break;
+            case 's':
+                nextY = y + 1;
+                break;
+            case 'a':
+                nextX = x - 1;
+                break;
+            case 'd':
+                nextX = x + 1;
+                break;
+            case 'W':
+                nextY = y - 1;
+                break;
+            case 'S':
+                nextY = y + 1;
+                break;
+            case 'A':
+                nextX = x - 1;
+                break;
+            case 'D':
+                nextX = x + 1;
+                break;
+            default:
+                return; // Si no es una flecha, no hacemos nada         
+        }
+        // Verificamos que no se salga de los límites del grid         
+        const gridHeight = 10;
+        const gridWidth = 12;
+        if (nextX >= 0 && nextX < gridWidth && nextY >= 0 && nextY < gridHeight) {
+            // Construimos el ID de la siguiente celda             
+            const nextCellId = `cell-${nextY}-${nextX}`;
+            const nextCell = document.getElementById(nextCellId);
+            if (nextCell) {
+                // Movemos la clase "player"                 
+                player.classList.remove('player');
+                nextCell.classList.add('player');
+                // Reproducir sonido de movimiento                 
+                const moveSound = document.getElementById('moveSound');
+                if (moveSound) {
+                    moveSound.currentTime = 0; // Reinicia el sonido si se pulsa rápido                     
+                    moveSound.play();
+                }
+            }
+        }
+    });
 
-// Cuando el jugador se mueve, comprobar si ha entrado en la celda con alguna migaja     
-document.addEventListener('keydown', function () {         
-    if (crumbs.length === 0) return;         
-    const player = document.querySelector('.player');         
-    if (!player) return;         
-    const coords = player.id.split('-');         
-    const py = parseInt(coords[1]);         
-    const px = parseInt(coords[2]);         
-    for (let i = crumbs.length - 1; i >= 0; i--) {             
-        const c = crumbs[i];             
-        if (py === c.y && px === c.x) {                 
-            eatCrumbAtIndex(i);             
-        }         
-    }     
-});     
+    // --- PARTE 3: MIGAJAS ----     
+    // Ahora soportamos varias migajas simultáneas que caen desde la fila 0     
+    const gridHeight = 10;
+    const gridWidth = 12;
+    const maxCrumbs = 4; // Puedes cambiar esto para más/menos migajas     
+    let crumbs = []; // array de {y, x, element}     
+    let crumbInterval = null; // intervalo que hace caer las migajas     
+    const crumbFallDelay = 400; // ms entre pasos de caída (ajusta la velocidad)     
+    const crumbSound = new Audio('../sonidos/clear-combo.mp3');
+    const scoreEl = document.getElementById('score');
+    let score = 0;
 
-// Empezar bucle de migajas automáticamente cuando cargue la página     
-window.addEventListener('load', function () {         
-    // Dejamos un pequeño retraso para que el grid y el jugador estén listos         
-    setTimeout(startCrumbLoop, 600);     
-});     
+    // Crear una migaja DOM dentro de una celda (no elimina otras migajas)     
+    function placeCrumbAt(y, x) {
+        const cell = document.getElementById(`cell-${y}-${x}`);
+        if (!cell) return null;
+        const frag = document.createElement('div');
+        frag.className = 'crumb';
+        cell.appendChild(frag);
+        return frag;
+    }
 
-const textarea = document.getElementById('transcripcion');     
-const iniciarBtn = document.getElementById('iniciar');     
-const detenerBtn = document.getElementById('detener'); // Agregamos un botón para detener     
+    function removeCrumbDOMObj(obj) {
+        if (!obj) return;
+        const el = obj.element;
+        if (el && el.parentElement) el.parentElement.removeChild(el);
+    }
 
-// Comprobar si el navegador es compatible con la Web Speech API     
-if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {         
-    alert("Tu navegador no soporta la API de reconocimiento de voz.");     
-} else {         
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;         
-    const recognition = new SpeechRecognition();         
-    // Configuración         
-    recognition.lang = 'es-ES';         
-    recognition.continuous = true; // Permite escuchar de forma continua         
-    recognition.interimResults = true; // Habilita los resultados provisionales         
+    // Comprueba si ya existe una migaja en la posición (y,x)     
+    function crumbAt(y, x) {
+        return crumbs.find(c => c.y === y && c.x === x);
+    }
 
-    // Manejar el clic para iniciar el reconocimiento         
-    iniciarBtn.onclick = () => {             
-        recognition.start();             
-        textarea.value = " ";             
-        iniciarBtn.disabled = true;             
-        detenerBtn.disabled = false;         
-    };         
+    function spawnCrumb() {
+        if (crumbs.length >= maxCrumbs) return;
+        // Elegir columna aleatoria         
+        let attempts = 0;
+        let x;
+        do {
+            x = Math.floor(Math.random() * gridWidth);
+            attempts++;
+        } while (crumbAt(0, x) && attempts < 8);
+        const y = 0;
+        // Evitar aparecer exactamente encima del jugador si está en y=0         
+        const player = document.querySelector('.player');
+        if (player) {
+            const pcoords = player.id.split('-');
+            const py = parseInt(pcoords[1]);
+            const px = parseInt(pcoords[2]);
+            if (py === 0 && px === x) {
+                // mover a otra columna si es posible                 
+                x = (x + 1) % gridWidth;
+            }
+        }
+        const el = placeCrumbAt(y, x);
+        crumbs.push({ y, x, element: el });
+    }
 
-    // Manejar el clic para detener el reconocimiento         
-    detenerBtn.onclick = () => {             
-        recognition.stop();             
-        iniciarBtn.disabled = false;             
-        detenerBtn.disabled = true;         
-    };         
+    function fallStepAll() {
+        if (crumbs.length === 0) return;
+        const player = document.querySelector('.player');
+        let py = -1, px = -1;
+        if (player) {
+            const coords = player.id.split('-');
+            py = parseInt(coords[1]);
+            px = parseInt(coords[2]);
+        }
+        // Iteramos al revés para poder splicear sin problemas         
+        for (let i = crumbs.length - 1; i >= 0; i--) {
+            const c = crumbs[i];
+            const nextY = c.y + 1;
+            // Si la migaja está en la misma celda que el jugador -> comer             
+            if (py === c.y && px === c.x) {
+                eatCrumbAtIndex(i);
+                continue;
+            }
+            // Si la migaja caerá sobre el jugador -> comer             
+            if (py === nextY && px === c.x) {
+                eatCrumbAtIndex(i);
+                continue;
+            }
+            // Si llega al final del grid, eliminar y programar respawn             
+            if (nextY >= gridHeight) {
+                removeCrumbDOMObj(c);
+                crumbs.splice(i, 1);
+                setTimeout(spawnCrumb, 600 + Math.random() * 1200);
+                continue;
+            }
+            // Mover DOM de la migaja a la siguiente celda             
+            const nextCell = document.getElementById(`cell-${nextY}-${c.x}`);
+            if (nextCell) {
+                // eliminar el DOM anterior y crear uno nuevo en la siguiente celda                 
+                removeCrumbDOMObj(c);
+                const el = placeCrumbAt(nextY, c.x);
+                c.y = nextY;
+                c.element = el;
+            }
+        }
+    }
 
-    // Evento cuando se recibe un resultado (final o provisional)         
-    recognition.onresult = (event) => {             
-        let finalTranscript = '';             
-        for (let i = event.resultIndex; i < event.results.length; i++) {                 
-            const transcript = event.results[i][0].transcript;                 
-            if (event.results[i].isFinal) {                     
-                finalTranscript += transcript;                 
-            }             
-        }             
-        // Solo actualizamos el textarea con el resultado final             
-        if (finalTranscript) {                 
-            // Usamos un simple += para concatenar el texto                 
-            textarea.value += finalTranscript + ' ';             
-        }         
-    };         
+    function eatCrumbAtIndex(i) {
+        const c = crumbs[i];
+        try {
+            crumbSound.currentTime = 0;
+            crumbSound.play();
+        } catch (e) {
+            // ignore autoplay errors         
+        }
+        score += 1;
+        scoreEl.textContent = score;
+        removeCrumbDOMObj(c);
+        crumbs.splice(i, 1);
+        // respawnear después de un tiempo aleatorio         
+        setTimeout(spawnCrumb, 400 + Math.random() * 1600);
+    }
 
-    // Evento si ocurre un error         
-    recognition.onerror = (event) => {             
-        textarea.value = "Error al reconocer voz: " + event.error;             
-        iniciarBtn.disabled = false;             
-        detenerBtn.disabled = true;         
-    };         
+    function startCrumbLoop() {
+        if (crumbInterval) return;
+        // Spawn inicial de varias migajas con pequeños delays         
+        for (let i = 0; i < maxCrumbs; i++) {
+            setTimeout(spawnCrumb, i * 500 + Math.random() * 800);
+        }
+        crumbInterval = setInterval(fallStepAll, crumbFallDelay);
+    }
+
+    // Cuando el jugador se mueve, comprobar si ha entrado en la celda con alguna migaja     
+    document.addEventListener('keydown', function () {
+        if (crumbs.length === 0) return;
+        const player = document.querySelector('.player');
+        if (!player) return;
+        const coords = player.id.split('-');
+        const py = parseInt(coords[1]);
+        const px = parseInt(coords[2]);
+        for (let i = crumbs.length - 1; i >= 0; i--) {
+            const c = crumbs[i];
+            if (py === c.y && px === c.x) {
+                eatCrumbAtIndex(i);
+            }
+        }
+    });
+
+    // Empezar bucle de migajas automáticamente cuando cargue la página     
+    window.addEventListener('load', function () {
+        // Dejamos un pequeño retraso para que el grid y el jugador estén listos         
+        setTimeout(startCrumbLoop, 600);
+    });
+
+    //const textarea = document.getElementById('transcripcion');
+    const iniciarBtn = document.getElementById('iniciar');
+    const detenerBtn = document.getElementById('detener'); // Agregamos un botón para detener     
+
+    // Comprobar si el navegador es compatible con la Web Speech API     
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert("Tu navegador no soporta la API de reconocimiento de voz.");
+    } else {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        // Configuración         
+        recognition.lang = 'es-ES';
+        recognition.continuous = true; // Permite escuchar de forma continua         
+        recognition.interimResults = true; // Habilita los resultados provisionales         
+
+        // Manejar el clic para iniciar el reconocimiento         
+        iniciarBtn.onclick = () => {
+            recognition.start();
+            //textarea.value = " ";
+            iniciarBtn.disabled = true;
+            detenerBtn.disabled = false;
+        };
+
+        // Manejar el clic para detener el reconocimiento         
+        detenerBtn.onclick = () => {
+            recognition.stop();
+            iniciarBtn.disabled = false;
+            detenerBtn.disabled = true;
+        };
+
+        // Evento cuando se recibe un resultado (final o provisional)
+        recognition.onresult = (event) => {
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript.trim().toLowerCase();
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript;
+                }
+            }
+
+            if (finalTranscript) {
+                //textarea.value += finalTranscript + ' ';
+
+                // Detectar comandos 
+                if (finalTranscript.includes("arriba")) {
+                    simularTecla("ArrowUp");
+                } else if (finalTranscript.includes("abajo")) {
+                    simularTecla("ArrowDown");
+                } else if (finalTranscript.includes("izquierda")) {
+                    simularTecla("ArrowLeft");
+                } else if (finalTranscript.includes("derecha")) {
+                    simularTecla("ArrowRight");
+                }
+            }
+        };
+
+        // Reiniciar automáticamente si se detiene
+        recognition.onend = () => {
+            recognition.start();
+        };
+
+        // Evento si ocurre un error         
+        recognition.onerror = (event) => {
+            alert("Error al reconocer voz: " + event.error);
+            iniciarBtn.disabled = false;
+            detenerBtn.disabled = true;
+        };
+    }
+
+
+
+    // Función para simular el evento de teclado
+    function simularTecla(tecla) {
+        const evento = new KeyboardEvent("keydown", { key: tecla });
+        document.dispatchEvent(evento);
+    }
+
+
 
     // Evento cuando el reconocimiento se detiene         
-    recognition.onend = () => {             
-        if (!iniciarBtn.disabled) {                 
-            //textarea.value = "Reconocimiento finalizado. Haz clic en Iniciar para comenzar de nuevo.";             
-        }         
-    };     
-} 
-</script> 
+    recognition.onend = () => {
+        if (!iniciarBtn.disabled) {
+            alert("Reconocimiento finalizado. Haz clic en Iniciar para comenzar de nuevo!.");
+        }
+    }; 
+</script>
+
 </html>
