@@ -43,14 +43,29 @@
         }
 
         .player {
-            background-image: url('./imagenes/pato.png');
             background-size: contain;
-            /* Contain es mejor para que no se corte la imagen */
             background-repeat: no-repeat;
             background-position: center;
-            /* background-color: darkgray; */
-            /* Color de fondo para distinguirlo */
+            background-image: url('./imagenes/pato.png');
         }
+
+    /* Direcciones */
+        .player.down {
+            background-image: url('./imagenes/patoabj.png');
+        }
+
+        .player.up {
+            background-image: url('./imagenes/patoarriba.png');
+        }
+
+        .player.left {
+            background-image: url('./imagenes/patoizq.png');
+        }
+
+        .player.right { 
+            background-image: url('./imagenes/pato.png');
+        }
+
 
         /* Migaja (crumb) visual */
         .crumb {
@@ -78,7 +93,7 @@
         <button id="detener">Jugar sin voz</button>
     </div>
     <audio autoplay loop>
-        <source src="../sonidos/ssVid.net--Canción-de-Pou-1-hora.mp3" type="audio/mpeg">
+        <source src="../sonidos/musica-fondo.mp3" type="audio/mpeg">
     </audio>
     <audio id="moveSound" src="../sonidos/quack.mp3" preload="auto"></audio>
 </body>
@@ -111,81 +126,71 @@
 
     // --- PARTE 2: LÓGICA DE MOVIMIENTO ---     
     document.addEventListener('keydown', function (event) {
-        // Usamos querySelector que nos devuelve el PRIMER elemento con la clase '.player'         
-        // Es más directo y no tenemos que usar el índice [0]         
-        const player = document.querySelector(".player");
-        // Si no existe un jugador, no hacemos nada.         
-        if (!player) {
+    const player = document.querySelector(".player");
+    if (!player) return;
+
+    const coords = player.id.split('-');
+    let y = parseInt(coords[1]);
+    let x = parseInt(coords[2]);
+    let nextY = y;
+    let nextX = x;
+    let directionClass = '';
+
+    switch (event.key) {
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
+            nextY = y - 1;
+            directionClass = 'up';
+            break;
+        case 'ArrowDown':
+        case 's':
+        case 'S':
+            nextY = y + 1;
+            directionClass = 'down';
+            break;
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
+            nextX = x - 1;
+            directionClass = 'left';
+            break;
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
+            nextX = x + 1;
+            directionClass = 'right';
+            break;
+        default:
             return;
-        }
-        // Obtenemos las coordenadas actuales desde el ID del jugador         
-        // "cell-y-x" -> ["cell", "y", "x"]         
-        const coords = player.id.split('-');
-        let y = parseInt(coords[1]);
-        let x = parseInt(coords[2]);
-        // Guardamos las coordenadas futuras         
-        let nextY = y;
-        let nextX = x;
-        switch (event.key) {
-            case 'ArrowUp':
-                nextY = y - 1;
-                break;
-            case 'ArrowDown':
-                nextY = y + 1;
-                break;
-            case 'ArrowLeft':
-                nextX = x - 1;
-                break;
-            case 'ArrowRight':
-                nextX = x + 1;
-                break;
-            case 'w':
-                nextY = y - 1;
-                break;
-            case 's':
-                nextY = y + 1;
-                break;
-            case 'a':
-                nextX = x - 1;
-                break;
-            case 'd':
-                nextX = x + 1;
-                break;
-            case 'W':
-                nextY = y - 1;
-                break;
-            case 'S':
-                nextY = y + 1;
-                break;
-            case 'A':
-                nextX = x - 1;
-                break;
-            case 'D':
-                nextX = x + 1;
-                break;
-            default:
-                return; // Si no es una flecha, no hacemos nada         
-        }
-        // Verificamos que no se salga de los límites del grid         
-        const gridHeight = 10;
-        const gridWidth = 12;
-        if (nextX >= 0 && nextX < gridWidth && nextY >= 0 && nextY < gridHeight) {
-            // Construimos el ID de la siguiente celda             
-            const nextCellId = `cell-${nextY}-${nextX}`;
-            const nextCell = document.getElementById(nextCellId);
-            if (nextCell) {
-                // Movemos la clase "player"                 
-                player.classList.remove('player');
-                nextCell.classList.add('player');
-                // Reproducir sonido de movimiento                 
-                const moveSound = document.getElementById('moveSound');
-                if (moveSound) {
-                    moveSound.currentTime = 0; // Reinicia el sonido si se pulsa rápido                     
-                    moveSound.play();
-                }
+    }
+
+    // Mantiene los límites del tablero
+    const gridHeight = 10;
+    const gridWidth = 12;
+    if (nextX >= 0 && nextX < gridWidth && nextY >= 0 && nextY < gridHeight) {
+        const nextCellId = `cell-${nextY}-${nextX}`;
+        const nextCell = document.getElementById(nextCellId);
+
+        if (nextCell) {
+            // Mover jugador
+            player.className = player.className.replace(/\bplayer\b.*$/, ''); // Limpia clases antiguas
+            nextCell.classList.add('player', directionClass);
+
+            // Reproducir sonido
+            const moveSound = document.getElementById('moveSound');
+            if (moveSound) {
+                moveSound.currentTime = 0;
+                moveSound.play();
             }
         }
-    });
+    } else {
+        // Si no se mueve porque está al borde, igual actualiza la dirección visual
+        player.classList.remove('up', 'down', 'left', 'right');
+        player.classList.add(directionClass);
+    }
+});
+
 
     // --- PARTE 3: MIGAJAS (LÓGICA ESTÁTICA) ---
     const gridHeight = 10;
