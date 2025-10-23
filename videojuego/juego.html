@@ -77,6 +77,9 @@
         <button id="iniciar">Jugar con voz!</button>
         <button id="detener">Jugar sin voz</button>
     </div>
+    <audio autoplay loop>
+        <source src="../sonidos/ssVid.net--Canción-de-Pou-1-hora.mp3" type="audio/mpeg">
+    </audio>
     <audio id="moveSound" src="../sonidos/quack.mp3" preload="auto"></audio>
 </body>
 <script>
@@ -187,7 +190,7 @@
     // --- PARTE 3: MIGAJAS (LÓGICA ESTÁTICA) ---
     const gridHeight = 10;
     const gridWidth = 12;
-    const maxCrumbs = 20; // Límite de 20 migajas
+    const maxCrumbs = 1; // Límite de 20 migajas
     
     let crumbs = []; // array de {y, x, element}
     const crumbSound = new Audio('../sonidos/clear-combo.mp3');
