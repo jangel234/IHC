@@ -184,19 +184,17 @@
         }
     });
 
-    // --- PARTE 3: MIGAJAS ----     
-    // Ahora soportamos varias migajas simultáneas que caen desde la fila 0     
+    // --- PARTE 3: MIGAJAS (LÓGICA ESTÁTICA) ---
     const gridHeight = 10;
     const gridWidth = 12;
-    const maxCrumbs = 4; // Puedes cambiar esto para más/menos migajas     
-    let crumbs = []; // array de {y, x, element}     
-    let crumbInterval = null; // intervalo que hace caer las migajas     
-    const crumbFallDelay = 400; // ms entre pasos de caída (ajusta la velocidad)     
+    const maxCrumbs = 20; // Límite de 20 migajas
+    
+    let crumbs = []; // array de {y, x, element}
     const crumbSound = new Audio('../sonidos/clear-combo.mp3');
     const scoreEl = document.getElementById('score');
     let score = 0;
 
-    // Crear una migaja DOM dentro de una celda (no elimina otras migajas)     
+    // Crear una migaja DOM dentro de una celda
     function placeCrumbAt(y, x) {
         const cell = document.getElementById(`cell-${y}-${x}`);
         if (!cell) return null;
@@ -206,117 +204,90 @@
         return frag;
     }
 
+    // Quitar el DOM de una migaja
     function removeCrumbDOMObj(obj) {
         if (!obj) return;
         const el = obj.element;
         if (el && el.parentElement) el.parentElement.removeChild(el);
     }
 
-    // Comprueba si ya existe una migaja en la posición (y,x)     
+    // Comprueba si ya existe una migaja en la posición (y,x)
     function crumbAt(y, x) {
         return crumbs.find(c => c.y === y && c.x === x);
     }
 
+    // [MODIFICADA] Hace aparecer una migaja en un lugar aleatorio y vacío
     function spawnCrumb() {
-        if (crumbs.length >= maxCrumbs) return;
-        // Elegir columna aleatoria         
-        let attempts = 0;
-        let x;
-        do {
-            x = Math.floor(Math.random() * gridWidth);
-            attempts++;
-        } while (crumbAt(0, x) && attempts < 8);
-        const y = 0;
-        // Evitar aparecer exactamente encima del jugador si está en y=0         
-        const player = document.querySelector('.player');
-        if (player) {
-            const pcoords = player.id.split('-');
-            const py = parseInt(pcoords[1]);
-            const px = parseInt(pcoords[2]);
-            if (py === 0 && px === x) {
-                // mover a otra columna si es posible                 
-                x = (x + 1) % gridWidth;
-            }
-        }
-        const el = placeCrumbAt(y, x);
-        crumbs.push({ y, x, element: el });
-    }
+        if (crumbs.length >= maxCrumbs) return; // No exceder el límite
 
-    function fallStepAll() {
-        if (crumbs.length === 0) return;
+        let y, x, attempts = 0;
+        const maxAttempts = 50; // Para evitar un bucle infinito si el tablero está lleno
+
+        // Buscar la posición del jugador para no aparecer encima de él
         const player = document.querySelector('.player');
         let py = -1, px = -1;
         if (player) {
-            const coords = player.id.split('-');
-            py = parseInt(coords[1]);
-            px = parseInt(coords[2]);
+            const pcoords = player.id.split('-');
+            py = parseInt(pcoords[1]);
+            px = parseInt(pcoords[2]);
         }
-        // Iteramos al revés para poder splicear sin problemas         
-        for (let i = crumbs.length - 1; i >= 0; i--) {
-            const c = crumbs[i];
-            const nextY = c.y + 1;
-            // Si la migaja está en la misma celda que el jugador -> comer             
-            if (py === c.y && px === c.x) {
-                eatCrumbAtIndex(i);
-                continue;
-            }
-            // Si la migaja caerá sobre el jugador -> comer             
-            if (py === nextY && px === c.x) {
-                eatCrumbAtIndex(i);
-                continue;
-            }
-            // Si llega al final del grid, eliminar y programar respawn             
-            if (nextY >= gridHeight) {
-                removeCrumbDOMObj(c);
-                crumbs.splice(i, 1);
-                setTimeout(spawnCrumb, 600 + Math.random() * 1200);
-                continue;
-            }
-            // Mover DOM de la migaja a la siguiente celda             
-            const nextCell = document.getElementById(`cell-${nextY}-${c.x}`);
-            if (nextCell) {
-                // eliminar el DOM anterior y crear uno nuevo en la siguiente celda                 
-                removeCrumbDOMObj(c);
-                const el = placeCrumbAt(nextY, c.x);
-                c.y = nextY;
-                c.element = el;
-            }
+
+        // Buscar una celda aleatoria que esté vacía (sin migaja y sin jugador)
+        do {
+            y = Math.floor(Math.random() * gridHeight);
+            x = Math.floor(Math.random() * gridWidth);
+            attempts++;
+        } while (
+            (crumbAt(y, x) || (y === py && x === px)) && attempts < maxAttempts
+        );
+
+        // Si se encontró un lugar, poner la migaja
+        if (attempts < maxAttempts) {
+            const el = placeCrumbAt(y, x);
+            crumbs.push({ y, x, element: el });
         }
     }
 
+
+    // Lógica para comer una migaja
     function eatCrumbAtIndex(i) {
         const c = crumbs[i];
         try {
             crumbSound.currentTime = 0;
             crumbSound.play();
         } catch (e) {
-            // ignore autoplay errors         
+            // ignore autoplay errors
         }
         score += 1;
         scoreEl.textContent = score;
+
+        // Quitar la migaja del DOM y del array
         removeCrumbDOMObj(c);
         crumbs.splice(i, 1);
-        // respawnear después de un tiempo aleatorio         
-        setTimeout(spawnCrumb, 400 + Math.random() * 1600);
+
+        // [CAMBIO] Llamar a spawnCrumb() directamente para reponerla
+        spawnCrumb();
     }
 
+    // Inicia el juego llenando el tablero
     function startCrumbLoop() {
-        if (crumbInterval) return;
-        // Spawn inicial de varias migajas con pequeños delays         
+        // Spawn inicial de las 20 migajas con pequeños delays
         for (let i = 0; i < maxCrumbs; i++) {
-            setTimeout(spawnCrumb, i * 500 + Math.random() * 800);
+            setTimeout(spawnCrumb, i * 900 + Math.random() * 200);
         }
-        crumbInterval = setInterval(fallStepAll, crumbFallDelay);
     }
 
-    // Cuando el jugador se mueve, comprobar si ha entrado en la celda con alguna migaja     
+    // Cuando el jugador se mueve, comprobar si ha entrado en la celda con alguna migaja
     document.addEventListener('keydown', function () {
         if (crumbs.length === 0) return;
         const player = document.querySelector('.player');
         if (!player) return;
+
         const coords = player.id.split('-');
         const py = parseInt(coords[1]);
         const px = parseInt(coords[2]);
+
+        // Iteramos al revés para poder eliminar sin problemas
         for (let i = crumbs.length - 1; i >= 0; i--) {
             const c = crumbs[i];
             if (py === c.y && px === c.x) {
@@ -325,9 +296,9 @@
         }
     });
 
-    // Empezar bucle de migajas automáticamente cuando cargue la página     
+    // Empezar bucle de migajas automáticamente cuando cargue la página
     window.addEventListener('load', function () {
-        // Dejamos un pequeño retraso para que el grid y el jugador estén listos         
+        // Dejamos un pequeño retraso para que el grid y el jugador estén listos
         setTimeout(startCrumbLoop, 600);
     });
 
