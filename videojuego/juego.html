@@ -1,400 +1,434 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="./css/bootstrap.min.css">
-    <title>Juego</title>
-    <style>
-        .altura {
-            height: 60px;
-            /* Ajustado para que quepa mejor en pantalla */
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./css/bootstrap.min.css">
+  <title>Juego</title>
+  <style>
+    .altura { height: 60px; }
 
-        body {
-            display: block;
-            justify-items: center;
-            background-image: url('./imagenes/el-bueno.png');
-            /* ← tu imagen de fondo */
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
+    body {
+      display: block;
+      justify-items: center;
+      background-image: url('./imagenes/el-bueno.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
 
-        #grid {
-            margin: 0;
-            /* background: lightcoral; */
-            /* ← tu imagen de fondo */
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
+    #grid {
+      margin: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
+    }
 
-        .bordered {
-            border: 2px solid rgb(200, 200, 200);
-            /* Borde más sutil */
-        }
+    .bordered { border: 2px solid rgb(200, 200, 200); }
+    .backgrounded, .bordered { border: none; background: transparent; }
 
-        .backgrounded,
-        .bordered {
-            border: none;
-            background: transparent;
-        }
+    .player {
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-image: url('./imagenes/pato.png');
+    }
 
-        .player {
-            background-size: contain;
-            background-repeat: no-repeat;
-            background-position: center;
-            background-image: url('./imagenes/pato.png');
-        }
+    .player.down { background-image: url('./imagenes/patoabj.png'); }
+    .player.up { background-image: url('./imagenes/patoarriba.png'); }
+    .player.left { background-image: url('./imagenes/patoizq.png'); }
+    .player.right { background-image: url('./imagenes/pato.png'); }
 
-    /* Direcciones */
-        .player.down {
-            background-image: url('./imagenes/patoabj.png');
-        }
+    .crumb {
+      width: 22px;
+      height: 22px;
+      background: radial-gradient(circle at 30% 30%, hsl(44, 31%, 54%) 0%, #5f4d03 40%, #a7ad5a 100%);
+      border-radius: 50%;
+      margin: 4px auto;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
 
-        .player.up {
-            background-image: url('./imagenes/patoarriba.png');
-        }
+    .explosion {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      background-image: url('./imagenes/explosion.gif');
+      background-size: cover;
+      pointer-events: none;
+      z-index: 10;
+    }
 
-        .player.left {
-            background-image: url('./imagenes/patoizq.png');
-        }
+    .pollo {
+      background-image: url('./imagenes/pollon.png') !important;
+      background-size: contain !important;
+      background-repeat: no-repeat !important;
+      background-position: center !important;
+    }
 
-        .player.right { 
-            background-image: url('./imagenes/pato.png');
-        }
+    .aguila {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      background-image: url('./imagenes/aguila.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      transform: scaleX(-1);
+      z-index: 15;
+      pointer-events: none;
+    }
 
+    #winPopup, #losePopup {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
 
-        /* Migaja (crumb) visual */
-        .crumb {
-            width: 22px;
-            height: 22px;
-            background: radial-gradient(circle at 30% 30%, #fff4b8 0%, #f2c94c 40%, #c58b00 100%);
-            border-radius: 50%;
-            margin: 4px auto;
-            /* centra en la celda */
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }
-    </style>
+    .popup-content {
+      background: white;
+      padding: 30px 50px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      font-size: 24px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 10px 25px;
+      font-size: 18px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 
 <body>
-    <div id="hud" style="margin:8px 0;font-weight:600; font-size: 40px; display: flex; justify-content: center;">Puntos: &nbsp; 
-        <span id="score">0</span>
+  <div id="hud" style="margin:8px 0;font-weight:600; font-size: 40px; display: flex; justify-content: center;">
+    Puntos: &nbsp;<span id="score">0</span>
+  </div>
+
+  <div class="container" id="grid"></div>
+
+  <div style="display: flex; justify-content: center; margin-top: 20px;">
+    <button id="iniciar">Jugar con voz!</button>
+    <button id="detener">Jugar sin voz</button>
+  </div>
+
+  <div id="winPopup">
+    <div class="popup-content">
+      <p>¡Ganaste! 🏆</p>
+      <button onclick="location.reload()">Volver a jugar</button>
     </div>
-    <div class="container" id="grid">
+  </div>
+
+  <div id="losePopup">
+    <div class="popup-content">
+      <p>¡Perdiste! 😢</p>
+      <button onclick="location.reload()">Volver a jugar</button>
     </div>
-    <textarea id="transcripcion" rows="5" cols="50" readonly style="display: none;"></textarea>
-    <div style="display: flex; justify-content: center;">
-        
-        <button id="iniciar">Jugar con voz!</button>
-        <button id="detener">Jugar sin voz</button>
-    </div>
-    <audio autoplay loop>
-        <source src="../sonidos/musica-fondo.mp3" type="audio/mpeg">
-    </audio>
-    <audio id="moveSound" src="../sonidos/Cuackcorto.mp3" preload="auto"></audio>
-</body>
+  </div>
+
+  <!-- Audios -->
+  <audio autoplay loop>
+    <source src="../sonidos/musica-fondo.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="moveSound" src="../sonidos/Cuackcorto.mp3" preload="auto"></audio>
+  <audio id="winSound" src="../sonidos/victoria.mp3" preload="auto"></audio>
+  <audio id="tronarSound" src="../sonidos/explosion.mp3" preload="auto"></audio>
+  <audio id="aguilaSound" src="../sonidos/aguila.mp3" preload="auto"></audio>
+  <audio id="alertaSound" loop src="../sonidos/alerta.mp3" preload="auto"></audio>
+  <audio id="aguilaSalida" src="../sonidos/salida.mp3" preload="auto"></audio>
+  <audio id="derrotaSound" src="../sonidos/derrota.mp3" preload="auto"></audio>
+  <audio id="eatSound" src="../sonidos/clear-combo.mp3" preload="auto"></audio>
+
 <script>
-    // --- PARTE 1: GENERACIÓN DEL GRID (CON IDs ÚNICOS) ---     
-    window.addEventListener('load', function () {
-        const gridContainer = document.getElementById("grid");
-        const gridHeight = 10; // Número de filas         
-        const gridWidth = 12;  // Número de columnas         
-        for (let i = 0; i < gridHeight; i++) {
-            let fila = document.createElement("div");
-            fila.className = 'row altura';
-            // No necesitamos ID en la fila, pero lo dejamos por si lo usas después             
-            fila.id = 'y' + i;
-            for (let o = 0; o < gridWidth; o++) {
-                let columna = document.createElement("div");
-                columna.className = 'col-1 backgrounded bordered';
-                // ---- CAMBIO IMPORTANTE: ID ÚNICO ----                 
-                // Creamos un ID como "cell-fila-columna", ej: "cell-0-0"                 
-                columna.id = `cell-${i}-${o}`;
-                fila.appendChild(columna);
-            }
-            gridContainer.appendChild(fila);
-        }
-        // Posición inicial del jugador         
-        let startingCell = document.getElementById('cell-5-6');
-        // Usamos classList.add() que es más seguro que sobreescribir className         
-        startingCell.classList.add('player');
-    });
+  const gridHeight = 10, gridWidth = 12;
+  let score = 0;
+  let crumb = null;
+  let gameWon = false; // ← bandera de victoria
 
-    // --- PARTE 2: LÓGICA DE MOVIMIENTO ---     
-    document.addEventListener('keydown', function (event) {
+  window.addEventListener('load', () => {
+    const grid = document.getElementById("grid");
+    for (let y = 0; y < gridHeight; y++) {
+      const row = document.createElement("div");
+      row.className = 'row altura';
+      for (let x = 0; x < gridWidth; x++) {
+        const cell = document.createElement("div");
+        cell.className = 'col-1 backgrounded bordered';
+        cell.id = `cell-${y}-${x}`;
+        cell.style.position = "relative";
+        row.appendChild(cell);
+      }
+      grid.appendChild(row);
+    }
+    document.getElementById("cell-5-6").classList.add("player");
+    spawnCrumb();
+    setTimeout(aparecerAguila, 1000);
+  });
+
+  document.addEventListener('keydown', handleKeydown);
+
+  function handleKeydown(event) {
+    if (gameWon) return; // ← no mover después de ganar
     const player = document.querySelector(".player");
-    if (!player) return;
+    if (!player || player.classList.contains("pollo")) return;
 
-    const coords = player.id.split('-');
-    let y = parseInt(coords[1]);
-    let x = parseInt(coords[2]);
-    let nextY = y;
-    let nextX = x;
-    let directionClass = '';
-
+    const [_, y, x] = player.id.split('-');
+    let nextY = parseInt(y), nextX = parseInt(x), dir = '';
     switch (event.key) {
-        case 'ArrowUp':
-        case 'w':
-        case 'W':
-            nextY = y - 1;
-            directionClass = 'up';
-            break;
-        case 'ArrowDown':
-        case 's':
-        case 'S':
-            nextY = y + 1;
-            directionClass = 'down';
-            break;
-        case 'ArrowLeft':
-        case 'a':
-        case 'A':
-            nextX = x - 1;
-            directionClass = 'left';
-            break;
-        case 'ArrowRight':
-        case 'd':
-        case 'D':
-            nextX = x + 1;
-            directionClass = 'right';
-            break;
-        default:
-            return;
+      case 'ArrowUp': nextY--; dir = 'up'; break;
+      case 'ArrowDown': nextY++; dir = 'down'; break;
+      case 'ArrowLeft': nextX--; dir = 'left'; break;
+      case 'ArrowRight': nextX++; dir = 'right'; break;
+      default: return;
     }
 
-    // Mantiene los límites del tablero
-    const gridHeight = 10;
-    const gridWidth = 12;
     if (nextX >= 0 && nextX < gridWidth && nextY >= 0 && nextY < gridHeight) {
-        const nextCellId = `cell-${nextY}-${nextX}`;
-        const nextCell = document.getElementById(nextCellId);
-
-        if (nextCell) {
-            // Mover jugador
-            player.className = player.className.replace(/\bplayer\b.*$/, ''); // Limpia clases antiguas
-            nextCell.classList.add('player', directionClass);
-
-            // Reproducir sonido
-            const moveSound = document.getElementById('moveSound');
-            if (moveSound) {
-                moveSound.currentTime = 0;
-                moveSound.play();
-            }
-        }
-    } else {
-        // Si no se mueve porque está al borde, igual actualiza la dirección visual
-        player.classList.remove('up', 'down', 'left', 'right');
-        player.classList.add(directionClass);
+      const nextCell = document.getElementById(`cell-${nextY}-${nextX}`);
+      player.className = player.className.replace(/\bplayer\b.*$/, '');
+      nextCell.classList.add('player', dir);
+      const moveSound = document.getElementById('moveSound');
+      moveSound.currentTime = 0; moveSound.play();
+      checkCrumbCollision();
     }
-});
+  }
 
+  // --- Migaja ---
+  function spawnCrumb() {
+    if (crumb) crumb.remove();
+    let y, x;
+    do {
+      y = Math.floor(Math.random() * gridHeight);
+      x = Math.floor(Math.random() * gridWidth);
+    } while (document.getElementById(`cell-${y}-${x}`).classList.contains('player'));
 
-    // --- PARTE 3: MIGAJAS (LÓGICA ESTÁTICA) ---
-    const gridHeight = 10;
-    const gridWidth = 12;
-    const maxCrumbs = 1; // Límite de 20 migajas
-    
-    let crumbs = []; // array de {y, x, element}
-    const crumbSound = new Audio('../sonidos/clear-combo.mp3');
-    const scoreEl = document.getElementById('score');
-    let score = 0;
+    const cell = document.getElementById(`cell-${y}-${x}`);
+    const newCrumb = document.createElement("div");
+    newCrumb.className = "crumb";
+    cell.appendChild(newCrumb);
+    crumb = newCrumb;
+  }
 
-    // Crear una migaja DOM dentro de una celda
-    function placeCrumbAt(y, x) {
-        const cell = document.getElementById(`cell-${y}-${x}`);
-        if (!cell) return null;
-        const frag = document.createElement('div');
-        frag.className = 'crumb';
-        cell.appendChild(frag);
-        return frag;
-    }
+  function checkCrumbCollision() {
+    const player = document.querySelector('.player');
+    if (!player || !crumb) return;
 
-    // Quitar el DOM de una migaja
-    function removeCrumbDOMObj(obj) {
-        if (!obj) return;
-        const el = obj.element;
-        if (el && el.parentElement) el.parentElement.removeChild(el);
-    }
+    if (player.contains(crumb)) {
+      const eatSound = document.getElementById('eatSound');
+      eatSound.currentTime = 0;
+      eatSound.play();
 
-    // Comprueba si ya existe una migaja en la posición (y,x)
-    function crumbAt(y, x) {
-        return crumbs.find(c => c.y === y && c.x === x);
-    }
+      score++;
+      document.getElementById('score').textContent = score;
+      crumb.remove();
+      crumb = null;
 
-    // [MODIFICADA] Hace aparecer una migaja en un lugar aleatorio y vacío
-    function spawnCrumb() {
-        if (crumbs.length >= maxCrumbs) return; // No exceder el límite
-
-        let y, x, attempts = 0;
-        const maxAttempts = 50; // Para evitar un bucle infinito si el tablero está lleno
-
-        // Buscar la posición del jugador para no aparecer encima de él
-        const player = document.querySelector('.player');
-        let py = -1, px = -1;
-        if (player) {
-            const pcoords = player.id.split('-');
-            py = parseInt(pcoords[1]);
-            px = parseInt(pcoords[2]);
-        }
-
-        // Buscar una celda aleatoria que esté vacía (sin migaja y sin jugador)
-        do {
-            y = Math.floor(Math.random() * gridHeight);
-            x = Math.floor(Math.random() * gridWidth);
-            attempts++;
-        } while (
-            (crumbAt(y, x) || (y === py && x === px)) && attempts < maxAttempts
-        );
-
-        // Si se encontró un lugar, poner la migaja
-        if (attempts < maxAttempts) {
-            const el = placeCrumbAt(y, x);
-            crumbs.push({ y, x, element: el });
-        }
-    }
-
-
-    // Lógica para comer una migaja
-    function eatCrumbAtIndex(i) {
-        const c = crumbs[i];
-        try {
-            crumbSound.currentTime = 0;
-            crumbSound.play();
-        } catch (e) {
-            // ignore autoplay errors
-        }
-        score += 1;
-        scoreEl.textContent = score;
-
-        // Quitar la migaja del DOM y del array
-        removeCrumbDOMObj(c);
-        crumbs.splice(i, 1);
-
-        // [CAMBIO] Llamar a spawnCrumb() directamente para reponerla
+      if (score >= 10) {
+        winGame();
+      } else {
         spawnCrumb();
+      }
     }
+  }
 
-    // Inicia el juego llenando el tablero
-    function startCrumbLoop() {
-        // Spawn inicial de las 20 migajas con pequeños delays
-        for (let i = 0; i < maxCrumbs; i++) {
-            setTimeout(spawnCrumb, i * 900 + Math.random() * 200);
+function winGame() {
+  document.removeEventListener('keydown', handleKeydown);
+  const player = document.querySelector('.player');
+  if (!player) return;
+
+  // Evita que el águila siga apareciendo
+  gameWon = true;
+
+  const grid = document.getElementById('grid');
+  const explosion = document.createElement('div');
+  explosion.className = 'explosion';
+  grid.appendChild(explosion);
+
+  // Calcula posición exacta del pato dentro del grid
+  const rect = player.getBoundingClientRect();
+  const gridRect = grid.getBoundingClientRect();
+  explosion.style.top = (rect.top - gridRect.top - 20) + 'px';
+  explosion.style.left = (rect.left - gridRect.left - 20) + 'px';
+
+  const tronar = document.getElementById('tronarSound');
+  tronar.currentTime = 0;
+  tronar.play();
+
+  // Después de la explosión: el pato se transforma en pollo, en el mismo lugar
+  setTimeout(() => {
+    explosion.remove();
+
+    // ✅ Mantener la clase "player" y añadir "pollo"
+    player.classList.add('pollo');
+
+    // Reproducir sonido y mostrar popup
+    const winSound = document.getElementById('winSound');
+    winSound.currentTime = 0;
+    winSound.play();
+
+    document.getElementById('winPopup').style.display = 'flex';
+  }, 1000);
+}
+
+  // --- Águila ---
+
+  function aparecerAguila() {
+    if (gameWon) return; // ← no aparece si ya se ganó
+
+    const grid = document.getElementById('grid');
+    const fila = Math.floor(Math.random() * gridHeight);
+    const aguila = document.createElement('div');
+    aguila.className = 'aguila';
+    grid.appendChild(aguila);
+
+    const rowHeight = document.querySelector('.altura').offsetHeight;
+    let left = grid.offsetWidth + 70;
+    aguila.style.top = (fila * rowHeight) + 'px';
+    aguila.style.left = left + 'px';
+
+    const aguilaSound = document.getElementById('aguilaSound');
+    aguilaSound.currentTime = 0;
+    aguilaSound.play();
+
+    const alertSound = document.getElementById('alertaSound');
+    const derrotaSound = document.getElementById('derrotaSound');
+    const aguilaSalida = document.getElementById('aguilaSalida');
+
+    const step = 8;
+    const interval = setInterval(() => {
+      if (gameWon) { // ← detiene movimiento si se ganó
+        clearInterval(interval);
+        aguila.remove();
+        return;
+      }
+
+      left -= step;
+      aguila.style.left = left + 'px';
+
+      const player = document.querySelector('.player');
+      if (player) {
+        const py = parseInt(player.id.split('-')[1]);
+        if (py === fila) {
+          if (alertSound.paused) { alertSound.currentTime = 0; alertSound.play(); }
+        } else if (!alertSound.paused) alertSound.pause();
+
+        const playerRect = player.getBoundingClientRect();
+        const aguilaRect = aguila.getBoundingClientRect();
+        if (
+          playerRect.left < aguilaRect.right &&
+          playerRect.right > aguilaRect.left &&
+          playerRect.top < aguilaRect.bottom &&
+          playerRect.bottom > aguilaRect.top
+        ) {
+          clearInterval(interval);
+          if (!alertSound.paused) alertSound.pause();
+          derrotaSound.currentTime = 0; derrotaSound.play();
+          aguila.remove();
+          mostrarPopupPerder();
         }
+      }
+
+      if (left < -100) {
+        clearInterval(interval);
+        if (!alertSound.paused) alertSound.pause();
+        aguilaSalida.currentTime = 0; aguilaSalida.play();
+        aguila.remove();
+        if (!gameWon) setTimeout(aparecerAguila, 3000);
+      }
+    }, 60);
+  }
+
+  function mostrarPopupPerder() {
+    document.removeEventListener('keydown', handleKeydown);
+    document.getElementById('losePopup').style.display = 'flex';
+  }
+
+  // --- VOZ ---
+const iniciarBtn = document.getElementById('iniciar');
+const detenerBtn = document.getElementById('detener');
+let reconocimiento = null;
+let reconocimientoActivo = false;
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  reconocimiento = new SpeechRecognition();
+  reconocimiento.lang = 'es-MX'; // español latinoamericano
+  reconocimiento.continuous = true; // sigue escuchando sin reiniciar
+  reconocimiento.interimResults = false; // solo resultados finales
+
+  // Al iniciar la detección de voz
+  iniciarBtn.onclick = () => {
+    if (!reconocimientoActivo) {
+      reconocimiento.start();
+      reconocimientoActivo = true;
+      iniciarBtn.disabled = true;
+      detenerBtn.disabled = false;
+      console.log("🎤 Reconocimiento de voz iniciado");
+    }
+  };
+
+  // Al detener la detección de voz
+  detenerBtn.onclick = () => {
+    if (reconocimientoActivo) {
+      reconocimiento.stop();
+      reconocimientoActivo = false;
+      iniciarBtn.disabled = false;
+      detenerBtn.disabled = true;
+      console.log("🛑 Reconocimiento de voz detenido");
+    }
+  };
+
+  // Procesar los resultados reconocidos
+  reconocimiento.onresult = (event) => {
+    let transcript = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      if (event.results[i].isFinal) {
+        transcript += event.results[i][0].transcript.trim().toLowerCase();
+      }
     }
 
-    // Cuando el jugador se mueve, comprobar si ha entrado en la celda con alguna migaja
-    document.addEventListener('keydown', function () {
-        if (crumbs.length === 0) return;
-        const player = document.querySelector('.player');
-        if (!player) return;
-
-        const coords = player.id.split('-');
-        const py = parseInt(coords[1]);
-        const px = parseInt(coords[2]);
-
-        // Iteramos al revés para poder eliminar sin problemas
-        for (let i = crumbs.length - 1; i >= 0; i--) {
-            const c = crumbs[i];
-            if (py === c.y && px === c.x) {
-                eatCrumbAtIndex(i);
-            }
-        }
-    });
-
-    // Empezar bucle de migajas automáticamente cuando cargue la página
-    window.addEventListener('load', function () {
-        // Dejamos un pequeño retraso para que el grid y el jugador estén listos
-        setTimeout(startCrumbLoop, 600);
-    });
-
-    //const textarea = document.getElementById('transcripcion');
-    const iniciarBtn = document.getElementById('iniciar');
-    const detenerBtn = document.getElementById('detener'); // Agregamos un botón para detener     
-
-    // Comprobar si el navegador es compatible con la Web Speech API     
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        alert("Tu navegador no soporta la API de reconocimiento de voz.");
-    } else {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        // Configuración         
-        recognition.lang = 'es-ES';
-        recognition.continuous = true; // Permite escuchar de forma continua         
-        recognition.interimResults = true; // Habilita los resultados provisionales         
-
-        // Manejar el clic para iniciar el reconocimiento         
-        iniciarBtn.onclick = () => {
-            recognition.start();
-            //textarea.value = " ";
-            iniciarBtn.disabled = true;
-            detenerBtn.disabled = false;
-        };
-
-        // Manejar el clic para detener el reconocimiento         
-        detenerBtn.onclick = () => {
-            recognition.stop();
-            iniciarBtn.disabled = false;
-            detenerBtn.disabled = true;
-        };
-
-        // Evento cuando se recibe un resultado (final o provisional)
-        recognition.onresult = (event) => {
-            let finalTranscript = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcript = event.results[i][0].transcript.trim().toLowerCase();
-                if (event.results[i].isFinal) {
-                    finalTranscript += transcript;
-                }
-            }
-
-            if (finalTranscript) {
-                //textarea.value += finalTranscript + ' ';
-
-                // Detectar comandos 
-                if (finalTranscript.includes("arriba")) {
-                    simularTecla("ArrowUp");
-                } else if (finalTranscript.includes("abajo")) {
-                    simularTecla("ArrowDown");
-                } else if (finalTranscript.includes("izquierda")) {
-                    simularTecla("ArrowLeft");
-                } else if (finalTranscript.includes("derecha")) {
-                    simularTecla("ArrowRight");
-                }
-            }
-        };
-
-        // Reiniciar automáticamente si se detiene
-        recognition.onend = () => {
-            recognition.start();
-        };
-
-        // Evento si ocurre un error         
-        recognition.onerror = (event) => {
-            alert("Error al reconocer voz: " + event.error);
-            iniciarBtn.disabled = false;
-            detenerBtn.disabled = true;
-        };
+    if (transcript) {
+      console.log("🗣️ Comando detectado:", transcript);
+      if (transcript.includes("arriba")) simularTecla("ArrowUp");
+      else if (transcript.includes("abajo")) simularTecla("ArrowDown");
+      else if (transcript.includes("izquierda")) simularTecla("ArrowLeft");
+      else if (transcript.includes("derecha")) simularTecla("ArrowRight");
     }
+  };
 
-
-
-    // Función para simular el evento de teclado
-    function simularTecla(tecla) {
-        const evento = new KeyboardEvent("keydown", { key: tecla });
-        document.dispatchEvent(evento);
+  // No reiniciar automáticamente el reconocimiento
+  reconocimiento.onend = () => {
+    if (reconocimientoActivo) {
+      console.log("Reconocimiento finalizó inesperadamente, reiniciando...");
+      reconocimiento.start(); // se reinicia solo si el usuario no lo detuvo
     }
+  };
 
+  reconocimiento.onerror = (event) => {
+    console.warn("⚠️ Error de reconocimiento:", event.error);
+  };
 
+} else {
+  alert("Tu navegador no soporta reconocimiento de voz 😢");
+}
 
-    // Evento cuando el reconocimiento se detiene         
-    recognition.onend = () => {
-        if (!iniciarBtn.disabled) {
-            alert("Reconocimiento finalizado. Haz clic en Iniciar para comenzar de nuevo!.");
-        }
-    }; 
+// Simular las teclas para compatibilidad con el sistema de movimiento actual
+function simularTecla(tecla) {
+  const e = new KeyboardEvent("keydown", { key: tecla });
+  document.dispatchEvent(e);
+}
+
 </script>
-
+</body>
 </html>
