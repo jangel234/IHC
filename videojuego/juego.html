@@ -69,8 +69,8 @@
 
     .aguila {
       position: absolute;
-      width: 70px;
-      height: 70px;
+      width: 60px;
+      height: 60px;
       background-image: url('./imagenes/aguila.png');
       background-size: contain;
       background-repeat: no-repeat;
@@ -140,8 +140,8 @@
   </div>
 
   <!-- Audios -->
-  <audio autoplay loop>
-    <source src="../sonidos/musica-fondo.mp3" type="audio/mpeg">
+  <audio id="backgroundMusic" autoplay loop>
+    <source id="backgroundSource" src="../sonidos/musica-fondo.mp3" type="audio/mpeg">
   </audio>
   <audio id="moveSound" src="../sonidos/Cuackcorto.mp3" preload="auto"></audio>
   <audio id="winSound" src="../sonidos/victoria.mp3" preload="auto"></audio>
@@ -156,7 +156,22 @@
   const gridHeight = 10, gridWidth = 12;
   let score = 0;
   let crumb = null;
-  let gameWon = false; // ← bandera de victoria
+  let gameWon = false;
+  let modoAlternativo = Math.random() < 0.3;
+
+  if (modoAlternativo) {
+    console.log("🌑 Modo alternativo activado");
+    document.body.style.backgroundImage = "url('./imagenes/el-malo.png')";
+    document.getElementById('backgroundSource').src = "../sonidos/evilassmusic.mp3";
+    document.getElementById('backgroundMusic').load();
+
+    const estilo = document.createElement("style");
+    estilo.innerHTML = `
+      .player { background-image: url('./imagenes/evilassduck.png') !important; }
+      .aguila { background-image: url('./imagenes/evilasseagle.png') !important; }
+    `;
+    document.head.appendChild(estilo);
+  }
 
   window.addEventListener('load', () => {
     const grid = document.getElementById("grid");
@@ -177,20 +192,30 @@
     setTimeout(aparecerAguila, 1000);
   });
 
-  document.addEventListener('keydown', handleKeydown);
+  document.addEventListener('keydown', (e) => moverJugador(e.key));
 
-  function handleKeydown(event) {
-    if (gameWon) return; // ← no mover después de ganar
+  function reproducirPaso() {
+    const moveSound = document.getElementById('moveSound');
+    moveSound.pause();
+    moveSound.currentTime = 0;
+    moveSound.play().catch(() => {});
+  }
+
+  function moverJugador(tecla) {
+    if (gameWon) return;
     const player = document.querySelector(".player");
     if (!player || player.classList.contains("pollo")) return;
 
     const [_, y, x] = player.id.split('-');
-    let nextY = parseInt(y), nextX = parseInt(x), dir = '';
-    switch (event.key) {
-      case 'ArrowUp': nextY--; dir = 'up'; break;
-      case 'ArrowDown': nextY++; dir = 'down'; break;
-      case 'ArrowLeft': nextX--; dir = 'left'; break;
-      case 'ArrowRight': nextX++; dir = 'right'; break;
+    let nextY = parseInt(y), nextX = parseInt(x);
+    let dir = '';
+
+    const invertido = modoAlternativo;
+    switch (tecla) {
+      case 'ArrowUp': nextY += invertido ? 1 : -1; dir = 'up'; break;
+      case 'ArrowDown': nextY += invertido ? -1 : 1; dir = 'down'; break;
+      case 'ArrowLeft': nextX += invertido ? 1 : -1; dir = 'left'; break;
+      case 'ArrowRight': nextX += invertido ? -1 : 1; dir = 'right'; break;
       default: return;
     }
 
@@ -198,13 +223,11 @@
       const nextCell = document.getElementById(`cell-${nextY}-${nextX}`);
       player.className = player.className.replace(/\bplayer\b.*$/, '');
       nextCell.classList.add('player', dir);
-      const moveSound = document.getElementById('moveSound');
-      moveSound.currentTime = 0; moveSound.play();
+      reproducirPaso(); // sonido inmediato
       checkCrumbCollision();
     }
   }
 
-  // --- Migaja ---
   function spawnCrumb() {
     if (crumb) crumb.remove();
     let y, x;
@@ -214,10 +237,9 @@
     } while (document.getElementById(`cell-${y}-${x}`).classList.contains('player'));
 
     const cell = document.getElementById(`cell-${y}-${x}`);
-    const newCrumb = document.createElement("div");
-    newCrumb.className = "crumb";
-    cell.appendChild(newCrumb);
-    crumb = newCrumb;
+    crumb = document.createElement("div");
+    crumb.className = "crumb";
+    cell.appendChild(crumb);
   }
 
   function checkCrumbCollision() {
@@ -225,67 +247,51 @@
     if (!player || !crumb) return;
 
     if (player.contains(crumb)) {
-      const eatSound = document.getElementById('eatSound');
-      eatSound.currentTime = 0;
-      eatSound.play();
-
-      score++;
-      document.getElementById('score').textContent = score;
       crumb.remove();
       crumb = null;
 
-      if (score >= 10) {
-        winGame();
+      if (modoAlternativo) {
+        document.getElementById('derrotaSound').play();
+        score--;
+        document.getElementById('score').textContent = score;
+        if (score <= -10) mostrarPopupPerder();
+        else spawnCrumb();
       } else {
-        spawnCrumb();
+        document.getElementById('eatSound').play();
+        score++;
+        document.getElementById('score').textContent = score;
+        if (score >= 10) winGame();
+        else spawnCrumb();
       }
     }
   }
 
-function winGame() {
-  document.removeEventListener('keydown', handleKeydown);
-  const player = document.querySelector('.player');
-  if (!player) return;
+  function winGame() {
+    gameWon = true;
+    const player = document.querySelector('.player');
+    const grid = document.getElementById('grid');
 
-  // Evita que el águila siga apareciendo
-  gameWon = true;
+    const explosion = document.createElement('div');
+    explosion.className = 'explosion';
+    grid.appendChild(explosion);
 
-  const grid = document.getElementById('grid');
-  const explosion = document.createElement('div');
-  explosion.className = 'explosion';
-  grid.appendChild(explosion);
+    const rect = player.getBoundingClientRect();
+    const gridRect = grid.getBoundingClientRect();
+    explosion.style.top = (rect.top - gridRect.top - 20) + 'px';
+    explosion.style.left = (rect.left - gridRect.left - 20) + 'px';
 
-  // Calcula posición exacta del pato dentro del grid
-  const rect = player.getBoundingClientRect();
-  const gridRect = grid.getBoundingClientRect();
-  explosion.style.top = (rect.top - gridRect.top - 20) + 'px';
-  explosion.style.left = (rect.left - gridRect.left - 20) + 'px';
+    document.getElementById('tronarSound').play();
 
-  const tronar = document.getElementById('tronarSound');
-  tronar.currentTime = 0;
-  tronar.play();
-
-  // Después de la explosión: el pato se transforma en pollo, en el mismo lugar
-  setTimeout(() => {
-    explosion.remove();
-
-    // ✅ Mantener la clase "player" y añadir "pollo"
-    player.classList.add('pollo');
-
-    // Reproducir sonido y mostrar popup
-    const winSound = document.getElementById('winSound');
-    winSound.currentTime = 0;
-    winSound.play();
-
-    document.getElementById('winPopup').style.display = 'flex';
-  }, 1000);
-}
-
-  // --- Águila ---
+    setTimeout(() => {
+      explosion.remove();
+      player.classList.add('pollo');
+      document.getElementById('winSound').play();
+      document.getElementById('winPopup').style.display = 'flex';
+    }, 1000);
+  }
 
   function aparecerAguila() {
-    if (gameWon) return; // ← no aparece si ya se ganó
-
+    if (gameWon) return;
     const grid = document.getElementById('grid');
     const fila = Math.floor(Math.random() * gridHeight);
     const aguila = document.createElement('div');
@@ -293,36 +299,45 @@ function winGame() {
     grid.appendChild(aguila);
 
     const rowHeight = document.querySelector('.altura').offsetHeight;
-    let left = grid.offsetWidth + 70;
+    const aguilaWidth = 70;
+    const gridW = grid.offsetWidth;
+
+    let derecha = Math.random() < 0.5;
+    if (modoAlternativo) derecha = !derecha;
+
+    let left = derecha ? gridW + aguilaWidth : -aguilaWidth;
+    let step = derecha ? -8 : 8;
+    aguila.style.transform = derecha ? "scaleX(1)" : "scaleX(-1)";
     aguila.style.top = (fila * rowHeight) + 'px';
     aguila.style.left = left + 'px';
 
-    const aguilaSound = document.getElementById('aguilaSound');
-    aguilaSound.currentTime = 0;
-    aguilaSound.play();
+    const sIn = modoAlternativo ? 'aguilaSalida' : 'aguilaSound';
+    const sOut = modoAlternativo ? 'aguilaSound' : 'aguilaSalida';
+    document.getElementById(sIn).play();
 
-    const alertSound = document.getElementById('alertaSound');
-    const derrotaSound = document.getElementById('derrotaSound');
-    const aguilaSalida = document.getElementById('aguilaSalida');
+    const alertaSound = document.getElementById('alertaSound');
+    let alertaActiva = false;
 
-    const step = 8;
     const interval = setInterval(() => {
-      if (gameWon) { // ← detiene movimiento si se ganó
-        clearInterval(interval);
-        aguila.remove();
-        return;
-      }
-
-      left -= step;
+      if (gameWon) { clearInterval(interval); aguila.remove(); return; }
+      left += step;
       aguila.style.left = left + 'px';
 
       const player = document.querySelector('.player');
       if (player) {
         const py = parseInt(player.id.split('-')[1]);
-        if (py === fila) {
-          if (alertSound.paused) { alertSound.currentTime = 0; alertSound.play(); }
-        } else if (!alertSound.paused) alertSound.pause();
+        // --- ALERTA ---
+        if (py === fila && !alertaActiva) {
+          alertaActiva = true;
+          alertaSound.pause();
+          alertaSound.currentTime = 0;
+          alertaSound.play().catch(() => {});
+        } else if (py !== fila && alertaActiva) {
+          alertaActiva = false;
+          alertaSound.pause();
+        }
 
+        // --- COLISIÓN ---
         const playerRect = player.getBoundingClientRect();
         const aguilaRect = aguila.getBoundingClientRect();
         if (
@@ -332,17 +347,18 @@ function winGame() {
           playerRect.bottom > aguilaRect.top
         ) {
           clearInterval(interval);
-          if (!alertSound.paused) alertSound.pause();
-          derrotaSound.currentTime = 0; derrotaSound.play();
+          alertaSound.pause();
           aguila.remove();
-          mostrarPopupPerder();
+          if (modoAlternativo) winGame();
+          else mostrarPopupPerder();
         }
       }
 
-      if (left < -100) {
+      // --- Salida ---
+      if ((derecha && left < -aguilaWidth) || (!derecha && left > gridW + aguilaWidth)) {
         clearInterval(interval);
-        if (!alertSound.paused) alertSound.pause();
-        aguilaSalida.currentTime = 0; aguilaSalida.play();
+        alertaSound.pause();
+        document.getElementById(sOut).play();
         aguila.remove();
         if (!gameWon) setTimeout(aparecerAguila, 3000);
       }
@@ -350,85 +366,53 @@ function winGame() {
   }
 
   function mostrarPopupPerder() {
-    document.removeEventListener('keydown', handleKeydown);
+    gameWon = true;
     document.getElementById('losePopup').style.display = 'flex';
   }
 
-  // --- VOZ ---
-const iniciarBtn = document.getElementById('iniciar');
-const detenerBtn = document.getElementById('detener');
-let reconocimiento = null;
-let reconocimientoActivo = false;
+  // --- VOZ --- //
+  const iniciarBtn = document.getElementById('iniciar');
+  const detenerBtn = document.getElementById('detener');
+  let reconocimiento = null, activo = false;
 
-if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  reconocimiento = new SpeechRecognition();
-  reconocimiento.lang = 'es-MX'; // español latinoamericano
-  reconocimiento.continuous = true; // sigue escuchando sin reiniciar
-  reconocimiento.interimResults = false; // solo resultados finales
+  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    reconocimiento = new SpeechRecognition();
+    reconocimiento.lang = 'es-MX';
+    reconocimiento.continuous = true;
+    reconocimiento.interimResults = false;
 
-  // Al iniciar la detección de voz
-  iniciarBtn.onclick = () => {
-    if (!reconocimientoActivo) {
-      reconocimiento.start();
-      reconocimientoActivo = true;
-      iniciarBtn.disabled = true;
-      detenerBtn.disabled = false;
-      console.log("🎤 Reconocimiento de voz iniciado");
-    }
-  };
-
-  // Al detener la detección de voz
-  detenerBtn.onclick = () => {
-    if (reconocimientoActivo) {
-      reconocimiento.stop();
-      reconocimientoActivo = false;
-      iniciarBtn.disabled = false;
-      detenerBtn.disabled = true;
-      console.log("🛑 Reconocimiento de voz detenido");
-    }
-  };
-
-  // Procesar los resultados reconocidos
-  reconocimiento.onresult = (event) => {
-    let transcript = '';
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      if (event.results[i].isFinal) {
-        transcript += event.results[i][0].transcript.trim().toLowerCase();
+    iniciarBtn.onclick = () => {
+      if (!activo) {
+        reconocimiento.start();
+        activo = true;
+        iniciarBtn.disabled = true;
+        detenerBtn.disabled = false;
       }
-    }
+    };
 
-    if (transcript) {
-      console.log("🗣️ Comando detectado:", transcript);
-      if (transcript.includes("arriba")) simularTecla("ArrowUp");
-      else if (transcript.includes("abajo")) simularTecla("ArrowDown");
-      else if (transcript.includes("izquierda")) simularTecla("ArrowLeft");
-      else if (transcript.includes("derecha")) simularTecla("ArrowRight");
-    }
-  };
+    detenerBtn.onclick = () => {
+      if (activo) {
+        reconocimiento.stop();
+        activo = false;
+        iniciarBtn.disabled = false;
+        detenerBtn.disabled = true;
+      }
+    };
 
-  // No reiniciar automáticamente el reconocimiento
-  reconocimiento.onend = () => {
-    if (reconocimientoActivo) {
-      console.log("Reconocimiento finalizó inesperadamente, reiniciando...");
-      reconocimiento.start(); // se reinicia solo si el usuario no lo detuvo
-    }
-  };
+    reconocimiento.onresult = (event) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) transcript += event.results[i][0].transcript.trim().toLowerCase();
+      }
+      if (transcript.includes("arriba")) moverJugador("ArrowUp");
+      else if (transcript.includes("abajo")) moverJugador("ArrowDown");
+      else if (transcript.includes("izquierda")) moverJugador("ArrowLeft");
+      else if (transcript.includes("derecha")) moverJugador("ArrowRight");
+    };
 
-  reconocimiento.onerror = (event) => {
-    console.warn("⚠️ Error de reconocimiento:", event.error);
-  };
-
-} else {
-  alert("Tu navegador no soporta reconocimiento de voz 😢");
-}
-
-// Simular las teclas para compatibilidad con el sistema de movimiento actual
-function simularTecla(tecla) {
-  const e = new KeyboardEvent("keydown", { key: tecla });
-  document.dispatchEvent(e);
-}
-
+    reconocimiento.onend = () => { if (activo) reconocimiento.start(); };
+  }
 </script>
 </body>
 </html>
