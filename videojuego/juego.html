@@ -157,6 +157,7 @@
   <audio id="aguilaSalida" src="../sonidos/salida.mp3" preload="auto"></audio>
   <audio id="derrotaSound" src="../sonidos/derrota.mp3" preload="auto"></audio>
   <audio id="eatSound" src="../sonidos/clear-combo.mp3" preload="auto"></audio>
+  <audio id="bumpSound" src="../sonidos/bump.mp3" preload="auto"></audio>
 
 <script>
   const gridHeight = 10, gridWidth = 12;
@@ -231,6 +232,8 @@
       nextCell.classList.add('player', dir);
       reproducirPaso(); // sonido inmediato
       checkCrumbCollision();
+    } else {
+      document.getElementById('bumpSound').play();
     }
   }
 
@@ -300,26 +303,26 @@
     if (gameWon) return;
     const grid = document.getElementById('grid');
     const player = document.querySelector('.player');
-    let playerY = 0; // Por defecto si el pato no se encuentra
-    if (player) {
-      playerY = parseInt(player.id.split('-')[1]);
-    }
+    let playerY = 0; // Por defecto si el pato no se encuentra
+    if (player) {
+     playerY = parseInt(player.id.split('-')[1]);
+    }
 
-    // Calcula un rango de filas cerca del pato
-    // -2 para incluir 2 arriba, +3 para incluir 2 abajo y la fila del pato
-    let minRow = Math.max(0, playerY - 1);
-    let maxRow = Math.min(gridHeight - 1, playerY + 2);
+    // Calcula un rango de filas cerca del pato
+    // -2 para incluir 2 arriba, +3 para incluir 2 abajo y la fila del pato
+    let minRow = Math.max(0, playerY - 1);
+    let maxRow = Math.min(gridHeight - 1, playerY + 2);
 
-    // Si el pato está muy arriba (ej: fila 0), el rango sería 0,1,2.
-    // Si está muy abajo (ej: fila 9), el rango sería 7,8,9.
-    // Aseguramos que siempre haya un mínimo de 3 filas en el rango si es posible
-    if (maxRow - minRow < 2) {
-      if (minRow === 0) maxRow = Math.min(gridHeight - 1, 2); // Si está arriba, coge 0,1,2
-      else minRow = Math.max(0, gridHeight - 2); // Si está abajo, coge las últimas 2
-    }
+    // Si el pato está muy arriba (ej: fila 0), el rango sería 0,1,2.
+    // Si está muy abajo (ej: fila 9), el rango sería 7,8,9.
+    // Aseguramos que siempre haya un mínimo de 3 filas en el rango si es posible
+    if (maxRow - minRow < 2) {
+      if (minRow === 0) maxRow = Math.min(gridHeight - 1, 2); // Si está arriba, coge 0,1,2
+      else minRow = Math.max(0, gridHeight - 2); // Si está abajo, coge las últimas 2
+    }
 
-      // Elige una fila aleatoria dentro de ese rango
-    const fila = Math.floor(Math.random() * (maxRow - minRow + 1)) + minRow;
+    // Elige una fila aleatoria dentro de ese rango
+    const fila = Math.floor(Math.random() * (maxRow - minRow + 1)) + minRow;
     // --- FIN DE LA MODIFICACIÓN ---
     const aguila = document.createElement('div');
     aguila.className = 'aguila';
